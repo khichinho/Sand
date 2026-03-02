@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Falling Sand Game</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        <div id="ui-panel">
+            <div id="category-container">
+                <select id="category-select">
+                    <!-- Populated by JS -->
+                </select>
+            </div>
+            <div id="element-palette"></div>
+        </div>
+    </div>
+
+    <div id="debug-info">FPS: <span id="fps-display">0</span></div>
+
+    <div id="brush-controls">
+        <div id="brush-preview-container">
+            <canvas id="brush-preview" width="21" height="21"></canvas>
+        </div>
+        <input type="range" id="brush-size" min="1" max="7" value="4">
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/elements.js"></script>
+    <script src="js/engine.js"></script>
+    <script src="js/input.js"></script>
+    <script src="js/main.js"></script>
+</body>
+
+</html>
