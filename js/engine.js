@@ -857,9 +857,9 @@ class Engine {
                 // Slow-burn self-consumption (Wood = ~4 seconds, Coal = ~20 seconds at 60 FPS)
                 // When completely consumed, only 25% chance to leave behind ASH (less clutter)
                 if (el === Elements.WOOD && Math.random() < 0.004) {
-                    this.setElement(x, y, Math.random() < 0.25 ? Elements.ASH : Elements.BLANK);
-                } else if (el === Elements.COAL && Math.random() < 0.0007) {
-                    this.setElement(x, y, Math.random() < 0.05 ? Elements.ASH : Elements.BLANK);
+                    this.setElement(x, y, Math.random() < 0.40 ? Elements.ASH : Elements.BLANK);
+                } else if (el === Elements.COAL && Math.random() < 0.00083) {
+                    this.setElement(x, y, Math.random() < 0.10 ? Elements.ASH : Elements.BLANK);
                 }
             }
         }

@@ -32,11 +32,33 @@ class Input {
             }
         });
 
+        // Touch support for mobile
+        this.canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Prevent scroll/zoom
+            this.isDrawing = true;
+            this.updateTouchPos(e);
+            this.draw();
+        }, { passive: false });
+
+        this.canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            this.isDrawing = false;
+        }, { passive: false });
+
+        this.canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault(); // Prevent page scrolling while drawing
+            this.updateTouchPos(e);
+            if (this.isDrawing) {
+                this.draw();
+            }
+        }, { passive: false });
+
         // Brush slider
         const brushSlider = document.getElementById('brush-size');
         brushSlider.addEventListener('input', (e) => {
             this.brushSize = parseInt(e.target.value);
             this.updateBrushPreview();
+            this.updateCanvasCursor();
         });
     }
 
@@ -48,6 +70,17 @@ class Input {
 
         this.mouseX = Math.floor((e.clientX - rect.left) * scaleX);
         this.mouseY = Math.floor((e.clientY - rect.top) * scaleY);
+    }
+
+    updateTouchPos(e) {
+        // Use the first active touch point
+        const touch = e.touches[0] || e.changedTouches[0];
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+
+        this.mouseX = Math.floor((touch.clientX - rect.left) * scaleX);
+        this.mouseY = Math.floor((touch.clientY - rect.top) * scaleY);
     }
 
     draw() {
@@ -86,6 +119,7 @@ class Input {
         // Initial render
         this.renderCategory('Basic');
         this.updateBrushPreview();
+        this.updateCanvasCursor();
     }
 
     updateBrushPreview() {
@@ -133,6 +167,61 @@ class Input {
                 }
             }
         }
+    }
+
+    updateCanvasCursor() {
+        const r = this.brushSize;
+        // Cursor canvas size: diameter + 2px border outline, scaled up 4x to match game scale
+        const scale = Config.SCALE;
+        const diameter = (r * 2 + 1) * scale;
+        const size = diameter + 2; // 1px padding each side for the outline
+        const center = Math.floor(size / 2);
+
+        const cursorCanvas = document.createElement('canvas');
+        cursorCanvas.width = size;
+        cursorCanvas.height = size;
+        const ctx = cursorCanvas.getContext('2d');
+
+        const c = ElementColors[this.currentElement];
+        let rgb = 'rgba(255,255,255,0.8)';
+        let isEraser = false;
+
+        if (c !== undefined && c !== 0) {
+            const rCol = c & 0xFF;
+            const gCol = (c >> 8) & 0xFF;
+            const bCol = (c >> 16) & 0xFF;
+            rgb = `rgb(${rCol},${gCol},${bCol})`;
+        } else {
+            isEraser = true;
+        }
+
+        // Draw each pixel of the brush shape scaled up
+        for (let i = -r; i <= r; i++) {
+            for (let j = -r; j <= r; j++) {
+                if (i * i + j * j <= r * r) {
+                    const px = center + i * scale - Math.floor(scale / 2);
+                    const py = center + j * scale - Math.floor(scale / 2);
+
+                    if (isEraser) {
+                        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                    } else if (this.currentElement === Elements.FIRECRACKER) {
+                        ctx.fillStyle = ((i + j) % 2 === 0) ? '#FFFFFF' : '#FF3296';
+                    } else {
+                        ctx.fillStyle = rgb;
+                    }
+                    ctx.fillRect(px, py, scale, scale);
+                }
+            }
+        }
+
+        // White outline for visibility against any background
+        ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(0.5, 0.5, size - 1, size - 1);
+
+        const dataURL = cursorCanvas.toDataURL();
+        // Hotspot at center so the cursor is centered on the mouse
+        this.canvas.style.cursor = `url('${dataURL}') ${center} ${center}, crosshair`;
     }
 
     // Renders a specific category to the palette
@@ -199,6 +288,7 @@ class Input {
             btn.classList.add('selected');
             this.currentElement = id;
             this.updateBrushPreview();
+            this.updateCanvasCursor();
         };
 
         container.appendChild(btn);
