@@ -837,8 +837,17 @@ class Engine {
         }
         else if (el === Elements.FUSE) {
             if (isHot) {
-                // Burns at 100% speed (roughly 20% faster than wax's 80%)
+                // Convert self
                 this.setElement(x, y, Elements.FIRE_3);
+                // Instantly ignite adjacent fuse pixels for ~2x propagation speed
+                for (let dy = -1; dy <= 1; dy++) {
+                    for (let dx = -1; dx <= 1; dx++) {
+                        if (dx === 0 && dy === 0) continue;
+                        if (this.getElement(x + dx, y + dy) === Elements.FUSE) {
+                            this.setElement(x + dx, y + dy, Elements.FIRE_3);
+                        }
+                    }
+                }
             }
         }
         else if (el === Elements.WOOD || el === Elements.COAL) {

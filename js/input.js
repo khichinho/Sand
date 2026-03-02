@@ -9,6 +9,7 @@ class Input {
 
         this.currentElement = Elements.SAND; // Default
         this.brushSize = 4; // Default
+        this.displayScale = 1; // Will be updated by updateCanvasCursor()
 
         this.setupListeners();
         this.setupUI();
@@ -84,8 +85,9 @@ class Input {
     }
 
     draw() {
-        // Draw a circle/square shape depending on brush size
-        const r = this.brushSize;
+        // Compute the effective radius in grid pixels that matches the cursor's visual size
+        // cursor shows brushSize pixels at displayScale, on canvas each grid pixel = Config.SCALE CSS px
+        const r = Math.max(1, Math.round(this.brushSize * this.displayScale / Config.SCALE));
         for (let i = -r; i <= r; i++) {
             for (let j = -r; j <= r; j++) {
                 if (i * i + j * j <= r * r) { // Circular brush
@@ -171,11 +173,17 @@ class Input {
 
     updateCanvasCursor() {
         const r = this.brushSize;
-        // Cursor canvas size: diameter + 2px border outline, scaled up 4x to match game scale
-        const scale = Config.SCALE;
-        const diameter = (r * 2 + 1) * scale;
-        const size = diameter + 2; // 1px padding each side for the outline
+
+        // Match cursor visual size to the preview canvas's CSS display scale
+        const previewEl = document.getElementById('brush-preview');
+        const previewRect = previewEl.getBoundingClientRect();
+        const displayScale = previewRect.width / previewEl.width; // ≈ 55/21 = 2.62 CSS px per grid px
+        this.displayScale = displayScale; // Store so draw() can use the same scale
+
+        const gridDiam = r * 2 + 1;
+        const size = Math.max(1, Math.round(gridDiam * displayScale));
         const center = Math.floor(size / 2);
+        const ps = Math.max(1, Math.round(displayScale)); // per-pixel draw size
 
         const cursorCanvas = document.createElement('canvas');
         cursorCanvas.width = size;
@@ -195,12 +203,11 @@ class Input {
             isEraser = true;
         }
 
-        // Draw each pixel of the brush shape scaled up
         for (let i = -r; i <= r; i++) {
             for (let j = -r; j <= r; j++) {
                 if (i * i + j * j <= r * r) {
-                    const px = center + i * scale - Math.floor(scale / 2);
-                    const py = center + j * scale - Math.floor(scale / 2);
+                    const px = Math.round(center + i * displayScale);
+                    const py = Math.round(center + j * displayScale);
 
                     if (isEraser) {
                         ctx.fillStyle = 'rgba(255,255,255,0.4)';
@@ -209,18 +216,12 @@ class Input {
                     } else {
                         ctx.fillStyle = rgb;
                     }
-                    ctx.fillRect(px, py, scale, scale);
+                    ctx.fillRect(px, py, ps, ps);
                 }
             }
         }
 
-        // White outline for visibility against any background
-        ctx.strokeStyle = 'rgba(255,255,255,0.7)';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(0.5, 0.5, size - 1, size - 1);
-
         const dataURL = cursorCanvas.toDataURL();
-        // Hotspot at center so the cursor is centered on the mouse
         this.canvas.style.cursor = `url('${dataURL}') ${center} ${center}, crosshair`;
     }
 
